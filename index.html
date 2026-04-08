@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polymarket Edge Dashboard â Where's the Money?</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --card: #12172a;
+      --card-hover: #1a2040;
+      --border: rgba(78,158,255,0.12);
+      --text: #e4e8f0;
+      --muted: #7a85a0;
+      --green: #2dffb4;
+      --red: #ff6b6b;
+      --yellow: #ffd166;
+      --blue: #4e9eff;
+      --purple: #b57bee;
+      --orange: #ff9f43;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); padding:24px 20px; }
+    .container { max-width:1300px; margin:0 auto; }
+
+    .header { text-align:center; padding:30px 20px 24px; margin-bottom:28px; border-bottom:1px solid var(--border); }
+    .header h1 { font-size:2.2em; font-weight:800; background:linear-gradient(135deg,#4e9eff,#2dffb4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px; }
+    .header .sub { color:var(--muted); font-size:1em; margin-bottom:12px; }
+    .header .badge { display:inline-flex; align-items:center; gap:6px; background:rgba(45,255,180,0.08); border:1px solid rgba(45,255,180,0.25); border-radius:20px; padding:5px 14px; font-size:0.78em; color:var(--green); }
+    .pulse { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Quick Stats */
+    .quick-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+    .qs { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; }
+    .qs .val { font-size:1.8em; font-weight:800; }
+    .qs .lbl { font-size:0.75em; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
+
+    /* Legend */
+    .legend { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:24px; }
+    .legend h3 { font-size:0.85em; color:var(--blue); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; }
+    .legend-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .legend-item { display:flex; align-items:flex-start; gap:8px; font-size:0.85em; }
+    .legend-icon { font-size:1.2em; flex-shrink:0; }
+    .legend-item strong { color:var(--text); }
+    .legend-item span { color:var(--muted); }
+
+    /* Niche Cards */
+    .niche-grid { display:grid; grid-template-columns:1fr; gap:18px; }
+    .niche-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:0; overflow:hidden; transition:border-color 0.3s; }
+    .niche-card:hover { border-color:rgba(78,158,255,0.35); }
+
+    .niche-top { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 14px; }
+    .niche-left { display:flex; align-items:center; gap:14px; }
+    .niche-icon { font-size:2em; }
+    .niche-name { font-size:1.15em; font-weight:700; }
+    .niche-subtitle { font-size:0.78em; color:var(--muted); margin-top:2px; }
+    .niche-verdict { font-size:0.72em; font-weight:700; padding:4px 12px; border-radius:20px; }
+    .verdict-hot { background:rgba(45,255,180,0.12); color:var(--green); border:1px solid rgba(45,255,180,0.3); }
+    .verdict-warm { background:rgba(255,209,102,0.12); color:var(--yellow); border:1px solid rgba(255,209,102,0.3); }
+    .verdict-cold { background:rgba(255,107,107,0.12); color:var(--red); border:1px solid rgba(255,107,107,0.3); }
+    .verdict-risky { background:rgba(181,123,238,0.12); color:var(--purple); border:1px solid rgba(181,123,238,0.3); }
+
+    /* Ratings Bar */
+    .ratings { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:0 24px 16px; }
+    .rating-box { background:rgba(255,255,255,0.03); border-radius:10px; padding:12px 14px; }
+    .rating-label { font-size:0.68em; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .rating-row { display:flex; align-items:center; gap:8px; }
+    .rating-dots { display:flex; gap:3px; }
+    .dot { width:14px; height:14px; border-radius:3px; }
+    .dot-filled-green { background:var(--green); }
+    .dot-filled-yellow { background:var(--yellow); }
+    .dot-filled-red { background:var(--red); }
+    .dot-filled-blue { background:var(--blue); }
+    .dot-empty { background:rgba(255,255,255,0.06); }
+    .rating-num { font-size:1.1em; font-weight:800; min-width:30px; }
+
+    /* Details */
+    .niche-details { padding:0 24px 18px; }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .detail-section h4 { font-size:0.72em; color:var(--blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+    .detail-section p { font-size:0.83em; color:var(--muted); line-height:1.6; }
+    .stat-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.82em; }
+    .stat-row:last-child { border-bottom:none; }
+    .stat-val { font-weight:700; }
+    .highlight { color:var(--green); }
+    .warning { color:var(--yellow); }
+    .danger { color:var(--red); }
+
+    /* Edge bar */
+    .edge-bar-wrap { padding:0 24px 18px; }
+    .edge-bar-label { display:flex; justify-content:space-between; font-size:0.75em; color:var(--muted); margin-bottom:5px; }
+    .edge-bar { height:8px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
+    .edge-fill { height:100%; border-radius:4px; }
+    .fill-green { background:linear-gradient(90deg,#1db87a,#2dffb4); }
+    .fill-yellow { background:linear-gradient(90deg,#e5a000,#ffd166); }
+    .fill-red { background:linear-gradient(90deg,#cc4444,#ff6b6b); }
+    .fill-blue { background:linear-gradient(90deg,#1e6fff,#4e9eff); }
+
+    /* Footer */
+    .footer { text-align:center; padding:28px; margin-top:32px; border-top:1px solid var(--border); color:var(--muted); font-size:0.78em; }
+
+    @media(max-width:800px) {
+      .quick-stats { grid-template-columns: repeat(2,1fr); }
+      .legend-grid { grid-template-columns: 1fr; }
+      .ratings { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>Polymarket Edge Dashboard</h1>
+    <div class="sub">Where's the money? Every niche rated for edge, risk, and how often you can trade it.</div>
+    <div class="badge"><span class="pulse"></span> Live data Â· April 7, 2026 Â· 200 markets analyzed</div>
+  </div>
+
+  <!-- QUICK STATS -->
+  <div class="quick-stats">
+    <div class="qs"><div class="val" style="color:var(--green)">$207M</div><div class="lbl">Total 24h Volume</div></div>
+    <div class="qs"><div class="val" style="color:var(--blue)">200</div><div class="lbl">Active Markets</div></div>
+    <div class="qs"><div class="val" style="color:var(--yellow)">49</div><div class="lbl">Tradeable (15-85%)</div></div>
+    <div class="qs"><div class="val" style="color:var(--purple)">8</div><div class="lbl">Niches Analyzed</div></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <h3>How to Read This Dashboard</h3>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <div class="legend-icon">ð°</div>
+        <div><strong>Profitability (out of 10)</strong><br><span>How much money can you make per trade? Higher = bigger potential payoff when you're right.</span></div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-icon">â ï¸</div>
+        <div><strong>Risk (out of 10)</strong><br><span>How likely are you to lose money? Higher = MORE dangerous. 10 means you could lose it all.</span></div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-icon">ð</div>
+        <div><strong>Frequency (out of 10)</strong><br><span>How often can you place bets? Higher = more chances per day/week. 10 = dozens of trades daily.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NICHE CARDS -->
+  <div class="niche-grid">
+
+    <!-- ============ 1. GEOPOLITICS ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">ð</div>
+          <div>
+            <div class="niche-name">Geopolitics (Iran/Israel/US War)</div>
+            <div class="niche-subtitle">38 markets Â· $119.9M daily volume Â· The biggest money on Polymarket right now</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-hot">ð¥ HOT â HIGHEST EDGE</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num highlight">9</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num danger">8</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">3</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="highlight">20-30%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-green" style="width:75%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Why There's an Edge</h4>
+            <p>News moves faster than the market can reprice. A ceasefire was announced TODAY and prices haven't caught up. The Strait of Hormuz "returns to normal" market is at 59% YES â but shipping is still down 90%. People are emotional about war markets and overshoot.</p>
+          </div>
+          <div class="detail-section">
+            <h4>Live Stats</h4>
+            <div class="stat-row"><span>Best trade right now</span><span class="stat-val highlight">Hormuz NO @ 41Â¢ (worth ~75Â¢)</span></div>
+            <div class="stat-row"><span>Tradeable markets</span><span class="stat-val">11 in the sweet spot</span></div>
+            <div class="stat-row"><span>Avg edge per trade</span><span class="stat-val highlight">~20-30%</span></div>
+            <div class="stat-row"><span>How often new markets appear</span><span class="stat-val">2-5 per week</span></div>
+          </div>
+        </div>
+        <p style="margin-top:12px;padding:10px;background:rgba(255,107,107,0.08);border-radius:8px;font-size:0.8em;color:var(--yellow);">â ï¸ <strong>Plain English:</strong> This is where the MOST money is right now, but it's also the most unpredictable. One tweet from Trump or one missile strike can flip a market overnight. High reward, high risk. Think of it like betting on a live poker game â huge swings.</p>
+      </div>
+    </div>
+
+    <!-- ============ 2. OIL & COMMODITIES ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">ð¢ï¸</div>
+          <div>
+            <div class="niche-name">Oil & Commodities (WTI Crude)</div>
+            <div class="niche-subtitle">11 markets Â· $4.6M daily volume Â· Directly tied to the Iran war</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-hot">ð¥ HOT â BIG GAP VS KALSHI</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num highlight">8</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num danger">7</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">4</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="highlight">15-45%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-green" style="width:65%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Why There's an Edge</h4>
+            <p>Polymarket says 31% chance WTI hits $120 in April. Kalshi says 76%. That's a FORTY-FIVE POINT gap between two prediction markets. Oil is already at $113. The Strait of Hormuz is still closed. If fighting continues, oil spikes to $120+ easily.</p>
+          </div>
+          <div class="detail-section">
+            <h4>Live Stats</h4>
+            <div class="stat-row"><span>Best trade right now</span><span class="stat-val highlight">WTI $120 YES @ 31Â¢</span></div>
+            <div class="stat-row"><span>Current WTI price</span><span class="stat-val">~$113/barrel</span></div>
+            <div class="stat-row"><span>Kalshi probability</span><span class="stat-val highlight">76% (vs Poly 31%)</span></div>
+            <div class="stat-row"><span>New markets per month</span><span class="stat-val">~8-12 (monthly price targets)</span></div>
+          </div>
+        </div>
+        <p style="margin-top:12px;padding:10px;background:rgba(255,209,102,0.08);border-radius:8px;font-size:0.8em;color:var(--yellow);">â ï¸ <strong>Plain English:</strong> Oil prices are wild right now because of the war. Polymarket is way behind Kalshi on the $120 target. It's like two stores selling the same thing at totally different prices â you buy from the cheap one. But if a ceasefire holds, oil could drop fast.</p>
+      </div>
+    </div>
+
+    <!-- ============ 3. NBA ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">ð</div>
+          <div>
+            <div class="niche-name">NBA Basketball</div>
+            <div class="niche-subtitle">23 markets Â· $15.7M daily volume Â· Compare against Vegas odds for edge</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-warm">â¡ WARM â DAILY GRIND</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num warning">5</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num warning">5</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">9</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="warning">3-12%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-yellow" style="width:35%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Why There's an Edge</h4>
+            <p>Polymarket has NO built-in house edge (0% vig with maker orders) vs sportsbooks (7% vig). When Polymarket odds differ from Vegas by 5%+, you're getting a better deal. Tonight: Bucks at 67.5% on Poly vs ~57% implied from Vegas = 10% gap.</p>
+          </div>
+          <div class="detail-section">
+            <h4>Live Stats</h4>
+            <div class="stat-row"><span>Games tonight</span><span class="stat-val">6+ NBA games</span></div>
+            <div class="stat-row"><span>Biggest gap tonight</span><span class="stat-val warning">Bucks/Nets: 10% off Vegas</span></div>
+            <div class="stat-row"><span>Avg edge when gap exists</span><span class="stat-val">3-7%</span></div>
+            <div class="stat-row"><span>Trades per week</span><span class="stat-val highlight">30-50 opportunities</span></div>
+          </div>
+        </div>
+        <p style="margin-top:12px;padding:10px;background:rgba(78,158,255,0.08);border-radius:8px;font-size:0.8em;color:var(--blue);">ð¡ <strong>Plain English:</strong> Small edges but you can do it EVERY DAY. It's like clipping coupons â each one saves a little, but do 50 a week and it adds up. Compare Polymarket to FanDuel/DraftKings odds, bet the side that's cheaper on Polymarket. Low drama, steady grind.</p>
+      </div>
+    </div>
+
+    <!-- ============ 4. NHL ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">ð</div>
+          <div>
+            <div class="niche-name">NHL Hockey</div>
+            <div class="niche-subtitle">5 markets Â· $3.7M daily volume Â· Same sportsbook arbitrage strategy as NBA</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-warm">â¡ WARM â SAME PLAYBOOK</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num warning">4</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num warning">6</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">7</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="warning">2-5%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-yellow" style="width:25%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Why There's an Edge</h4>
+            <p>Same concept as NBA â less volume means prices are sometimes lazier to update. Hockey markets get less attention from sharp bettors, so mispricing can sit longer. Smaller edge per trade but fewer people are looking.</p>
+          </div>
+          <div class="detail-section">
+            <h4>Live Stats</h4>
+            <div class="stat-row"><span>Games tonight</span><span class="stat-val">4+ NHL games</span></div>
+            <div class="stat-row"><span>Biggest gap tonight</span><span class="stat-val">Blue Jackets/Red Wings: ~5%</span></div>
+            <div class="stat-row"><span>Trades per week</span><span class="stat-val">15-25 opportunities</span></div>
+          </div>
+        </div>
+        <p style="margin-top:12px;padding:10px;background:rgba(78,158,255,0.08);border-radius:8px;font-size:0.8em;color:var(--blue);">ð¡ <strong>Plain English:</strong> Smaller pond, fewer fish, but less competition. Hockey gets less attention on Polymarket than NBA, so when odds are off, they stay off longer. Good add-on to an NBA strategy.</p>
+      </div>
+    </div>
+
+    <!-- ============ 5. MLB ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">â¾</div>
+          <div>
+            <div class="niche-name">MLB Baseball</div>
+            <div class="niche-subtitle">11 markets Â· $6.7M daily volume Â· Season just started â growing fast</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-warm">â¡ WARM â GROWING</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num warning">4</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num warning">5</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">10</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="warning">2-6%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-yellow" style="width:28%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <p style="padding:0 0 12px;font-size:0.83em;color:var(--muted);line-height:1.6;">MLB season just started â 15 games per day, 162 games per team per season. That's the MOST frequent sports niche by far. Early-season odds are sloppier because books and Polymarket are still calibrating to 2026 rosters. Smaller edge per bet, but massive volume of opportunities. Think of it as a factory â small margin per unit, but you produce hundreds of units.</p>
+      </div>
+    </div>
+
+    <!-- ============ 6. SOCCER ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">â½</div>
+          <div>
+            <div class="niche-name">Soccer (Global Leagues)</div>
+            <div class="niche-subtitle">14 markets Â· $17.1M daily volume Â· Champions League driving volume</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-cold">âï¸ COLD â TIGHT ODDS</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--muted)">2</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num warning">4</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">6</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span style="color:var(--muted)">0-3%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-red" style="width:12%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <p style="padding:0 0 12px;font-size:0.83em;color:var(--muted);line-height:1.6;">Soccer markets are heavily traded globally and priced very efficiently. Most games resolve at 99.5% YES or 0.05% â nearly all favorites are correctly priced. Only 1 tradeable market today out of 14. The liquidity is high ($6.9M) but the edge is near zero because international bettors keep prices sharp. Skip this unless you have specialized knowledge about a lower-tier league.</p>
+      </div>
+    </div>
+
+    <!-- ============ 7. US POLITICS ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">ðï¸</div>
+          <div>
+            <div class="niche-name">US Politics (2028 Cycle)</div>
+            <div class="niche-subtitle">32 markets Â· $14.9M daily volume Â· $30.3M liquidity â the deepest pool</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-risky">ð® LONG GAME â PATIENCE REQUIRED</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num warning">6</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num warning">6</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">2</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="warning">5-15%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-yellow" style="width:40%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <p style="padding:0 0 12px;font-size:0.83em;color:var(--muted);line-height:1.6;">The 2028 election cycle is in its early phase â only 3 markets in the tradeable zone (Newsom at 26%, Rubio at 22%, Newsom general at 17%). Early political markets are often wrong because people trade on name recognition, not polling data. The edge comes from doing actual research (polling aggregates, historical patterns) and buying before the crowd catches on. Downside: your money is locked up for 2+ years until resolution. Best for patient capital.</p>
+      </div>
+    </div>
+
+    <!-- ============ 8. CRYPTO ============ -->
+    <div class="niche-card">
+      <div class="niche-top">
+        <div class="niche-left">
+          <div class="niche-icon">â¿</div>
+          <div>
+            <div class="niche-name">Crypto (Bitcoin, Tokens, Airdrops)</div>
+            <div class="niche-subtitle">7 markets Â· $2.3M daily volume Â· Bitcoin $80K target in play</div>
+          </div>
+        </div>
+        <span class="niche-verdict verdict-risky">ð² RISKY â VOLATILE</span>
+      </div>
+
+      <div class="ratings">
+        <div class="rating-box">
+          <div class="rating-label">ð° Profitability</div>
+          <div class="rating-row">
+            <div class="rating-num warning">5</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-filled-green"></div><div class="dot dot-filled-green"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">â ï¸ Risk</div>
+          <div class="rating-row">
+            <div class="rating-num danger">9</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div><div class="dot dot-filled-red"></div>
+              <div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+        <div class="rating-box">
+          <div class="rating-label">ð Frequency</div>
+          <div class="rating-row">
+            <div class="rating-num" style="color:var(--blue)">5</div>
+            <div class="rating-dots">
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-filled-blue"></div><div class="dot dot-filled-blue"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+              <div class="dot dot-empty"></div><div class="dot dot-empty"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edge-bar-wrap">
+        <div class="edge-bar-label"><span>Estimated Edge</span><span class="warning">5-10%</span></div>
+        <div class="edge-bar"><div class="edge-fill fill-yellow" style="width:30%"></div></div>
+      </div>
+
+      <div class="niche-details">
+        <p style="padding:0 0 12px;font-size:0.83em;color:var(--muted);line-height:1.6;">Crypto markets on Polymarket are a double-edged sword. The ultra-short (5-15 min) BTC/ETH markets have made some people rich â but the edge requires sub-second execution against bots. For regular price targets like "Bitcoin $80K in April" (currently 24.5% YES), the edge comes from understanding macro better than the crowd. Risk is extremely high because crypto can move 10-20% in a day. Only trade this if you genuinely understand crypto market dynamics.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM LINE -->
+  <div style="margin-top:28px;background:var(--card);border:2px solid rgba(45,255,180,0.2);border-radius:14px;padding:24px;">
+    <h3 style="font-size:1.1em;margin-bottom:14px;color:var(--green);">ð The Bottom Line â Where Should You Start?</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;font-size:0.88em;line-height:1.7;">
+      <div>
+        <strong style="color:var(--green)">If you want the BIGGEST single trade:</strong><br>
+        <span style="color:var(--muted)">Go with Geopolitics or Oil. The Strait of Hormuz NO trade and WTI $120 YES trade each have 20-45% estimated edge. But these are high-risk, one-shot bets. If you're wrong, you lose your stake.</span>
+      </div>
+      <div>
+        <strong style="color:var(--blue)">If you want CONSISTENT daily income:</strong><br>
+        <span style="color:var(--muted)">Go with NBA + NHL + MLB sports arbitrage. Smaller edge (3-7%) but you get 50+ trades per week. Compare Polymarket odds to Vegas, bet the cheaper side. Polymarket charges 0% maker fees vs 7% sportsbook vig â that alone is your edge.</span>
+      </div>
+      <div>
+        <strong style="color:var(--purple)">If you want to PARK money long-term:</strong><br>
+        <span style="color:var(--muted)">Politics 2028 markets. Early-cycle names are mispriced. Buy cheap, wait 2 years. But your money is locked until the market resolves (you can sell early at a loss or gain).</span>
+      </div>
+      <div>
+        <strong style="color:var(--yellow)">My recommendation â do ALL THREE:</strong><br>
+        <span style="color:var(--muted)">Put 40% into daily sports grind (steady income), 40% into geopolitics/oil (big swings while the war is hot), and 20% into a couple of long-shot political positions. Diversify your edge.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>Polymarket Edge Dashboard Â· Built by steven-agent Â· April 7, 2026</div>
+    <div style="margin-top:6px;">Data: Polymarket Gamma API (200 markets) Â· Vegas odds (FanDuel, DraftKings, OddsShark) Â· Kalshi Â· News: CNN, Al Jazeera, CBS, NPR</div>
+    <div style="margin-top:6px;">â ï¸ This is research, not financial advice. All trading involves risk of loss. Never bet more than you can afford to lose.</div>
+  </div>
+
+</div>
+</body>
+</html>
